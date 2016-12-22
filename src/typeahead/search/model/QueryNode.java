@@ -18,7 +18,7 @@ public class QueryNode {
         this.rawQuery = rawQuery;
         this.score = score;
         this.type = type;
-        this.timeInMillis = TypeAheadSearch.START_TIME_IN_MILLIS++;
+        this.timeInMillis = Solution.START_TIME_IN_MILLIS++;
     }
 
     public float getScore() {

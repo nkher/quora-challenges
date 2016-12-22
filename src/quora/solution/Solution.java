@@ -2,10 +2,11 @@ package quora.solution;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.InputStreamReader;
 import java.util.*;
 import java.util.Map.Entry;
 
-public class TypeAheadSearch {
+public class Solution {
 
 	private static StringBuffer FINAL_RESULT = new StringBuffer();
 
@@ -35,7 +36,7 @@ public class TypeAheadSearch {
 		
 	private QueryStore queryStore;
 	
-	public TypeAheadSearch() {
+	public Solution() {
 		
 		queryStore = new QueryStore();
 	}
@@ -204,17 +205,14 @@ public class TypeAheadSearch {
 	}
 	
 	public static void main(String[] args) throws Exception {
-
-		final String filePath = "inputfiles";
-		final String fileName = "tc5";
 		
-		TypeAheadSearch typeAheadSearch = new TypeAheadSearch();
+		Solution typeAheadSearch = new Solution();
 		
 		BufferedReader bufferedReader = null;
 		
 		try {
 			
-			bufferedReader = new BufferedReader(new FileReader(filePath + "/" + fileName));
+			bufferedReader = new BufferedReader(new InputStreamReader(System.in));
 			
 			String line = bufferedReader.readLine(); // reading the line for the number of input rows
 			
@@ -736,7 +734,7 @@ class QueryNode {
 		this.rawQuery = rawQuery;
 		this.score = score;
 		this.type = type;
-		this.timeInMillis = TypeAheadSearch.START_TIME_IN_MILLIS++;
+		this.timeInMillis = Solution.START_TIME_IN_MILLIS++;
 	}
 	
 	public float getScore() {
