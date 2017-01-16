@@ -1,12 +1,14 @@
 package quora.solution;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Solution {
+
+	private BufferedWriter writer = null;
 
 	private static StringBuffer FINAL_RESULT = new StringBuffer();
 
@@ -35,6 +37,8 @@ public class Solution {
 	private final static int MAX_RESULTS = 20;
 		
 	private QueryStore queryStore;
+
+	private int lastWrite = 0;
 	
 	public Solution() {
 		
@@ -45,15 +49,32 @@ public class Solution {
 		return this.queryStore.getSize();
 	}
 	
-	private void process(final String input) {
+	private void process(final String input) throws IOException {
 								
-		// We terminate the program here intentionally as we assume the tc1 has to be good.
+		// We terminate the program here intentionally as we assume the input has to be good.
 		// A real service wouldn't terminate this ways on a bad request
 		if (input == null || input.length() == 0) {
 			throw new IllegalArgumentException("HTTP 400. Bad Input. Null or Empty Input.");
 		}
 				
 		parseInput(input);
+
+		if (this.queryStore.getSize() == (lastWrite + 500)) {
+			writeResult();
+		}
+	}
+
+	public void writeResult() throws IOException {
+
+		System.out.println(FINAL_RESULT.toString());
+
+		writer = new BufferedWriter(new FileWriter("outputfiles/out", true));
+		writer.write(FINAL_RESULT.toString());
+		writer.close();
+
+		FINAL_RESULT = new StringBuffer();
+
+		this.lastWrite = this.queryStore.getSize();
 	}
 			
 	private void parseInput(final String input) {
@@ -135,7 +156,7 @@ public class Solution {
 	private void appendResult(String result) {
 
 		if (result != null || !result.isEmpty()) {
-			FINAL_RESULT.append(result);
+			FINAL_RESULT.append(result.trim());
 		}
 		FINAL_RESULT.append("\n");
 	}
@@ -205,6 +226,11 @@ public class Solution {
 	}
 	
 	public static void main(String[] args) throws Exception {
+
+		final long start = System.currentTimeMillis();
+
+		final String filePath = "inputfiles";
+		final String fileName = "tc5";
 		
 		Solution typeAheadSearch = new Solution();
 		
@@ -212,7 +238,7 @@ public class Solution {
 		
 		try {
 			
-			bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+			bufferedReader = new BufferedReader(new FileReader(filePath + "/" + fileName));
 			
 			String line = bufferedReader.readLine(); // reading the line for the number of input rows
 			
@@ -226,7 +252,11 @@ public class Solution {
 			System.out.println(e.getMessage());
 		}
 
-		System.out.println(FINAL_RESULT.toString());
+		typeAheadSearch.writeResult();
+
+		final long end = System.currentTimeMillis();
+
+		System.out.println("Total Time Taken : " + (end - start)/1000 + " seconds.");
 	}
 
 }
@@ -295,7 +325,7 @@ class QueryStore {
 			return new PriorityQueue<>();
 		}
 
-		List<QueryNode> unweightedResults = optimizedSearch(query); // perform basic search
+		List<QueryNode> unweightedResults = optimizedSearch(query); // perform optimized search
 		List<QueryNode> boostedResults = applyBoosts(unweightedResults, boostMap); // applying boosts to results
 
 		PriorityQueue<QueryNode> pQueue = new PriorityQueue<>(numberOfResults, new QueryResultComparator());
@@ -306,7 +336,7 @@ class QueryStore {
 
 	/**
 	 *
-	 * Method to perform the insert() functionality as per the details given in the challenge assignment.
+	 * Method to perform t qhe insert() functionality as per the details given in the challenge assignment.
 	 * It inserts into the Trie as well as the queryMap and tokenNodeMap (HashMap and HashSet for optimization).
 	 *
 	 * @param query
@@ -314,13 +344,13 @@ class QueryStore {
 	public void insert(final String query, final String uid, final float score, final ItemType type) {
 		
 		validateQuery(query);
-		
-		queryMap.put(uid, new QueryNode(uid, query, score, type));
+
+		QueryNode newNode = QueryNodeFactory.createQueryNodeWithNewTimeStamp(uid, query, score, type);
+		queryMap.put(uid, newNode);
 
 		// enter each token from the data string into the trie
 		String cleanedQuery = cleanString(query);
 		String tokens[] = cleanedQuery.split("\\s+");
-
 
 		for (String token : tokens) {
 
@@ -424,6 +454,7 @@ class QueryStore {
 		if (query == null || query.length() == 0) {
 			throw new IllegalArgumentException("HTTP 400. Bad Input. Null or Empty Query passed.");
 		}
+
 	}
 
 	private List<QueryNode> optimizedSearch(String query) {
@@ -490,6 +521,7 @@ class QueryStore {
 		int level = token.length();
 		TrieNode curr = this.root;
 		char ch = '$'; // dummy initialization
+		boolean prefixNotPresent = false;
 
 		// Quick optimization
 		if (!curr.doesChildExist(token.charAt(0))) {
@@ -503,13 +535,14 @@ class QueryStore {
 			ch = token.charAt(i);
 
 			if (curr.getChildren() == null || !curr.getChildren().containsKey(ch)) {
+				prefixNotPresent = !prefixNotPresent;
 				break;
 			}
 
 			curr = curr.getChildren().get(ch);
 		}
 
-		if (i < level-1) {
+		if (prefixNotPresent) { // the prefix does not exist in the trie
 			return uidList;
 		}
 
@@ -625,7 +658,7 @@ class QueryStore {
 					boostedScore *= boostValue;
 				}
 
-				QueryNode boostedNode = node.clone();
+				QueryNode boostedNode = QueryNodeFactory.createQueryNodeWithExistingTimeStamp(node.getUid(), node.getRawQuery(), node.getScore(), node.getItemType(), node.getTimeInMillis());
 				boostedNode.setScore(boostedScore);
 				updatedResults.add(boostedNode);
 
@@ -641,8 +674,16 @@ class QueryStore {
 
 	private String cleanString(String str) {
 
-		str = str.replaceAll("[^\\dA-Za-z ]", "");
-		str.trim();
+		Matcher matcher = Pattern.compile("\\((.*?)\\)").matcher(str);
+
+		while (matcher.find()) {
+			StringBuilder sb = new StringBuilder();
+			sb.append("(").append(matcher.group(1)).append(")");
+			str = str.replaceAll(sb.toString(), "");
+		}
+
+		str = str.replaceAll("[^0-9a-zA-Z'\\-!,:; *]", "").trim();
+
 		return str.toLowerCase();
 	}
 	
@@ -734,7 +775,6 @@ class QueryNode {
 		this.rawQuery = rawQuery;
 		this.score = score;
 		this.type = type;
-		this.timeInMillis = Solution.START_TIME_IN_MILLIS++;
 	}
 	
 	public float getScore() {
@@ -747,6 +787,10 @@ class QueryNode {
 
 	public long getTimeInMillis() {
 		return this.timeInMillis;
+	}
+
+	public void setTimeInMillis(long timeInMillis) {
+		this.timeInMillis = timeInMillis;
 	}
 	
 	public String getUid() {
@@ -764,7 +808,9 @@ class QueryNode {
 	@Override
 	public QueryNode clone() {
 
-		return new QueryNode(this.uid, this.rawQuery, this.score, this.type);
+		QueryNode newNode = new QueryNode(this.uid, this.rawQuery, this.score, this.type);
+
+		return newNode;
 	}
 
 	@Override
@@ -773,6 +819,24 @@ class QueryNode {
 		return "[" + this.uid + ", " + this.score + ", " + this.timeInMillis + "]";
 	}
 	
+}
+
+class QueryNodeFactory {
+
+	public static QueryNode createQueryNodeWithNewTimeStamp(String uid, String rawQuery, float score, ItemType type) {
+
+		QueryNode node = new QueryNode(uid, rawQuery, score, type);
+		node.setTimeInMillis(Solution.START_TIME_IN_MILLIS++);
+		return node;
+	}
+
+	public static QueryNode createQueryNodeWithExistingTimeStamp(String uid, String rawQuery, float score, ItemType type, long timeInMillis) {
+
+		QueryNode node = new QueryNode(uid, rawQuery, score, type);
+		node.setTimeInMillis(timeInMillis);
+		return node;
+	}
+
 }
 
 enum ItemType {
@@ -833,6 +897,6 @@ class QueryResultComparator implements Comparator<QueryNode> {
 
 		}
 
-		return 0;
+		return -1;
 	}
 }
