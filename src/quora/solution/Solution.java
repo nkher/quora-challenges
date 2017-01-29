@@ -230,7 +230,7 @@ public class Solution {
 		final long start = System.currentTimeMillis();
 
 		final String filePath = "inputfiles";
-		final String fileName = "tc5";
+		final String fileName = "test";
 		
 		Solution typeAheadSearch = new Solution();
 		
@@ -336,7 +336,7 @@ class QueryStore {
 
 	/**
 	 *
-	 * Method to perform t qhe insert() functionality as per the details given in the challenge assignment.
+	 * Method to perform the insert() functionality as per the details given in the challenge assignment.
 	 * It inserts into the Trie as well as the queryMap and tokenNodeMap (HashMap and HashSet for optimization).
 	 *
 	 * @param query
@@ -365,7 +365,6 @@ class QueryStore {
 				tokenNodeMap.put(token, node);
 			}
 		}
-
 		size++;
 	}
 
@@ -469,7 +468,19 @@ class QueryStore {
 
 		for (String token : tokens) {
 
-			Set<String> result = searchInTrie(token);
+			Set<String> result = new HashSet<>();
+
+			if (!tokenNodeMap.containsKey(token)) {
+
+				result.addAll(searchInTrie(token));
+
+			} else {
+
+				TrieNode node = tokenNodeMap.get(token);
+
+				result.addAll(node.getUidList());
+				result.addAll(performBFSOnTrie(node));
+			}
 
 			if (!result.isEmpty()) {
 				addTokenResultsToMap(uidFreqMap, result);
@@ -550,20 +561,20 @@ class QueryStore {
 			uidList.addAll(curr.getUidList());
 		}
 
-		uidList.addAll(performDFSOnTrie(curr));
+		uidList.addAll(performBFSOnTrie(curr));
 
 		return uidList;
 	}
 
 	/***
 	 *
-	 * This method performs a DFS on the trie from the node that is passed to it.
+	 * This method performs a BFS on the trie from the node that is passed to it.
 	 * It returns a list of results associated to it.
 	 *
 	 * @param curr
 	 * @return
 	 */
-	private Set<String> performDFSOnTrie(TrieNode curr) {
+	private Set<String> performBFSOnTrie(TrieNode curr) {
 
 		if (curr == null) {
 			return new HashSet<>();
@@ -682,7 +693,7 @@ class QueryStore {
 			str = str.replaceAll(sb.toString(), "");
 		}
 
-		str = str.replaceAll("[^0-9a-zA-Z'\\-!,:; *]", "").trim();
+		str = str.replaceAll("[^0-9a-zA-Z'\\-!,:;\\[\\].? *]", "").trim();
 
 		return str.toLowerCase();
 	}
