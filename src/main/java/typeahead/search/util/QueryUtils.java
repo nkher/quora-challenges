@@ -1,29 +1,25 @@
 package typeahead.search.util;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Created by nameshkher on 12/21/16.
  */
-public class StringUtils {
+public class QueryUtils {
 
     /**
      *  Preventing initialization.
      */
-    private StringUtils() {
+    private QueryUtils() {
         throw new AssertionError();
     }
 
     public static String cleanString(String str) {
 
-        if (str == null) {
-            throw new IllegalArgumentException("Bad Input. Cannot clean a null String.");
-        }
-
-        if (StringUtils) {
+        if (StringUtils.isEmpty(str)) {
             return str;
         }
 
