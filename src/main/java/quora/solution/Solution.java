@@ -3,8 +3,6 @@ package quora.solution;
 import java.io.*;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Solution {
 
@@ -13,6 +11,8 @@ public class Solution {
 	private static StringBuffer FINAL_RESULT = new StringBuffer();
 
 	public static long START_TIME_IN_MILLIS = new Date().getTime();
+
+	public final static String ALPHANUMERIC_CHARS = "[^A-Za-z0-9',?\\[\\]\\-*&%^():;|.! ]";
 
 	private final static String SPACE_STRING = " ";
 
@@ -68,9 +68,9 @@ public class Solution {
 
 		System.out.println(FINAL_RESULT.toString());
 
-//		writer = new BufferedWriter(new FileWriter("outputfiles/out", true));
-//		writer.write(FINAL_RESULT.toString());
-//		writer.close();
+		writer = new BufferedWriter(new FileWriter("outputfiles/out", true));
+		writer.write(FINAL_RESULT.toString());
+		writer.close();
 
 		FINAL_RESULT = new StringBuffer();
 
@@ -687,17 +687,11 @@ class QueryStore {
 
 	private String cleanString(String str) {
 
-		Matcher matcher = Pattern.compile("\\((.*?)\\)").matcher(str);
-
-		while (matcher.find()) {
-			StringBuilder sb = new StringBuilder();
-			sb.append("(").append(matcher.group(1)).append(")");
-			str = str.replaceAll(sb.toString(), "");
+		if (str.length() == 0) {
+			return str;
 		}
 
-		str = str.replaceAll("[^0-9a-zA-Z'\\-!,:;\\[\\].? *]", "").trim();
-
-		return str.toLowerCase();
+		return str.replaceAll(Solution.ALPHANUMERIC_CHARS, "").trim().toLowerCase();
 	}
 	
 }
