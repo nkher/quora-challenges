@@ -59,14 +59,14 @@ public class Solution {
 				
 		parseInput(input);
 
-		if (this.queryStore.getSize() == (lastWrite + 500)) {
+		if (this.queryStore.getSize() == (lastWrite + 10000)) {
 			writeResult();
 		}
 	}
 
 	public void writeResult() throws IOException {
 
-		System.out.println(FINAL_RESULT.toString());
+		// System.out.println(FINAL_RESULT.toString());
 
 		writer = new BufferedWriter(new FileWriter("outputfiles/out", true));
 		writer.write(FINAL_RESULT.toString());
@@ -108,12 +108,7 @@ public class Solution {
 		ItemType type = ItemType.getItemTypeByName(input[ADD_COMMAND_TYPE_INDEX]);		
 		String uid = input[ADD_COMMAND_UID_INDEX];
 		float score = Float.parseFloat(input[ADD_COMMAND_SCORE_INDEX]);
-		
 		String rawQuery = generateRawQuery(4, input);
-
-		if (uid.equals("q36b092")) {
-			System.out.println("here");
-		}
 
 		this.queryStore.insert(rawQuery, uid, score, type);
 	}
@@ -239,10 +234,12 @@ public class Solution {
 		Solution typeAheadSearch = new Solution();
 		
 		BufferedReader bufferedReader = null;
+		FileReader fileReader = null;
 		
 		try {
-			
-			bufferedReader = new BufferedReader(new FileReader(filePath + "/" + fileName));
+
+			fileReader = new FileReader(filePath + "/" + fileName);
+			bufferedReader = new BufferedReader(fileReader);
 			
 			String line = bufferedReader.readLine(); // reading the line for the number of input rows
 			
@@ -251,9 +248,13 @@ public class Solution {
 				typeAheadSearch.process(line);
 			}
 
+			bufferedReader.close();
+			fileReader.close();
+
 		} catch (Exception e) {
-			
-			System.out.println(e.getMessage());
+
+			e.printStackTrace();
+			System.exit(1);
 		}
 
 		typeAheadSearch.writeResult();
@@ -364,9 +365,7 @@ class QueryStore {
 
 			} else { // optimization !!
 
-				TrieNode node = tokenNodeMap.get(token);
-				node.addToUidList(uid);
-				tokenNodeMap.put(token, node);
+				tokenNodeMap.get(token).addToUidList(uid);
 			}
 		}
 		size++;
@@ -387,10 +386,8 @@ class QueryStore {
 			String rawQuery = queryMap.get(uid).getRawQuery();
 			String cleanedRawQuery = cleanString(rawQuery);
 
-
 			for (String token : cleanedRawQuery.split("\\s+")) {
-
-				deleteFromTrie(token, uid);
+				deleteFromTrie(token, uid); // does not actually remove from the Trie
 			}
 
 			queryMap.remove(uid); // Remove from the query map
@@ -431,23 +428,17 @@ class QueryStore {
 	 */
 	private void deleteFromTrie(String token, String uid) {
 
-		int level = token.length();
-		TrieNode curr = this.root;
+		TrieNode curr = null;
 
-		int i = 0;
+		curr = this.tokenNodeMap.get(token);
 
-		while (i < level) {
+		if (curr != null) {
+			curr.removeFromUidList(uid);
 
-			char ch = token.charAt(i);
-			curr = curr.getChildren().get(ch);
-			i++;
-		}
-
-		curr.removeFromUidList(uid);
-
-		if (curr.isUidListEmpty()) {
-			curr.setIsLast(false);
-			tokenNodeMap.remove(token);
+			if (curr.isUidListEmpty()) {
+				curr.setIsLast(false);
+				tokenNodeMap.remove(token);
+			}
 		}
 
 	}
@@ -759,8 +750,9 @@ class TrieNode {
 	}
 
 	public void removeFromUidList(String uid) {
-
-		this.uidList.remove(uid);
+		if (this.uidList != null) {
+			this.uidList.remove(uid);
+		}
 	}
 
 	public Set<String> getUidList() {
@@ -854,7 +846,7 @@ enum ItemType {
 	Board("board");
 	
 	private String name;
-	
+
 	private ItemType(String name) {
 		this.name = name;
 	}
