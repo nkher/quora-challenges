@@ -1,5 +1,6 @@
 package typeahead.search.util;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -13,13 +14,13 @@ import java.util.Collection;
 @RunWith(Parameterized.class)
 public class QueryUtilsTest {
 
-    private String inputStr;
+    private String input;
 
-    private String expectedStr;
+    private String expected;
 
     public QueryUtilsTest(String inputStr, String expectedStr) {
-        this.inputStr = inputStr;
-        this.expectedStr = expectedStr;
+        this.input = inputStr;
+        this.expected = expectedStr;
     }
 
     @Parameterized.Parameters
@@ -27,20 +28,25 @@ public class QueryUtilsTest {
 
         return Arrays.asList(new Object[][] {
 
-                { "COR", "cor" },
-                { "general of the Volscians. (AUFIDIUS:)", "cor" },
-                { "Lieutenant to Aufidius. (Lieutenant:)", "cor" },
+                 { "COR", "cor" },
+                 { "general of the Volscians. (AUFIDIUS:)", "general of the volscians. (aufidius:)" },
+                 { "Lieutenant to Aufidius. (Lieutenant:)", "lieutenant to aufidius. (lieutenant:)" },
+                 { "kill him, and we'll have.", "kill him, and we'll have."},
+                 { "wife to Coriolanus", "wife to coriolanus" },
+                 { "[They fight, and", "[they fight, and" },
+                 { "so: they are", "so: they are" },
+                 { "They are worn, lord consul, so,", "they are worn, lord consul, so," },
+                 { "them: on the", "them: on the" },
+                 { "for a ?hen!", "for a ?hen!" }
         });
     }
-
-    private static String[] expected = {};
 
     @Test
     public void testCleanString() {
 
-        String actual = QueryUtils.cleanString(inputStr);
+        String actual = QueryUtils.cleanString(input);
 
-        System.out.println(actual);
+        Assert.assertEquals(expected, actual);
     }
 
 }

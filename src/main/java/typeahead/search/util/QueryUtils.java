@@ -10,6 +10,8 @@ import java.util.regex.Pattern;
  */
 public class QueryUtils {
 
+    private final static String ONLY_ALPHANUMERIC_CHARS = "[^A-Za-z0-9',?\\[\\]\\-*&%^():;|.! ]";
+
     /**
      *  Preventing initialization.
      */
@@ -23,16 +25,6 @@ public class QueryUtils {
             return str;
         }
 
-        Matcher matcher = Pattern.compile("\\((.*?)\\)").matcher(str);
-
-        while (matcher.find()) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("(").append(matcher.group(1)).append(")");
-            str = str.replaceAll(sb.toString(), "");
-        }
-
-        str = str.replaceAll("[^0-9a-zA-Z'\\-!,:;\\[\\].? *]", "").trim();
-
-        return str.toLowerCase();
+        return str.replaceAll(ONLY_ALPHANUMERIC_CHARS, StringUtils.EMPTY).trim().toLowerCase();
     }
 }
