@@ -1,4 +1,4 @@
-package hackerrank;
+package quora.solution;
 
 import javafx.util.Pair;
 
